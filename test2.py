@@ -1,5 +1,5 @@
-from notebook.utils import url_path_join as ujoin
-from notebook.base.handlers import IPythonHandler
+# from notebook.utils import url_path_join as ujoin
+# from notebook.base.handlers import IPythonHandler
 import os, json, urllib, requests
 from subprocess import Popen, PIPE, TimeoutExpired, SubprocessError
 import subprocess
@@ -9,8 +9,10 @@ import time
 
 interface_name = 'wlan0'
 sudo_password = 'raspberry'
+wpa_supplicant = '/etc/wpa_supplicant/wpa_supplicant.conf'
+user_directory = './temp.conf'
 
-class WifiHandler(IPythonHandler):
+class WifiHandler():
     
     # input system call parameter
     def select_cmd(self, x):
@@ -25,12 +27,15 @@ class WifiHandler(IPythonHandler):
             'wpa_select_network' : ['wpa_cli', '-i', interface_name, 'select_network'],
             'is_wlan0_up' : ['sudo', 'iwlist', interface_name, 'scan'],
             'interface_reconfigure' : ['wpa_cli', '-i', interface_name, 'reconfigure'],
+            'copy_wpa_supplicant' : ['sudo', 'cp', '-f', wpa_supplicant, user_directory],
+            'replace_wpa_supplicant' : ['sudo', 'mv', '-f', user_directory, wpa_supplicant],
+            'change_mode' : ['sudo', 'chmod', '777', user_directory]
         }.get(x, None)
 
-    def error_and_return(self, reason):
+    # def error_and_return(self, reason):
 
-        # send error
-        self.send_error(500, reason=reason)
+    #     # send error
+    #     self.send_error(500, reason=reason)
 
     def interface_up(self):
 
@@ -40,7 +45,7 @@ class WifiHandler(IPythonHandler):
             subprocess.run(cmd)
         except SubprocessError as e:
             print(e)
-            self.error_and_return('interface up error')
+            # self.error_and_return('interface up error')
             return
         
         self.is_inter_up = True
@@ -53,7 +58,7 @@ class WifiHandler(IPythonHandler):
             subprocess.run(cmd)
         except SubprocessError as e:
             print(e)
-            self.error_and_return('interfae down error')
+            # self.error_and_return('interfae down error')
             return
         
         self.is_inter_up = False
@@ -69,21 +74,19 @@ class WifiHandler(IPythonHandler):
 
     def get_current_wifi_info(self):
         
-        wifi_info = [{
-            'SSID' : None,
-            'PSK' : None,
-            'SIGNAL' : 0,
-            'STATUS' : False
-        }]
+        wifi_info = {
+            'wifi_status' : False,
+            'wifi_SSID' : None
+        }
 
         cmd = self.select_cmd('iwconfig')
         try:
-            with Popen(['iwconfig'], stdin=PIPE, stdout=PIPE, stderr=PIPE) as proc:
+            with Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE) as proc:
                 output = proc.communicate()
                 output = [x.decode('utf-8') for x in output]
         except SubprocessError as e:
             print(e)
-            self.error_and_return('Improper Popen object opened')
+            # self.error_and_return('Improper Popen object opened')
             return
 
         try:
@@ -91,8 +94,9 @@ class WifiHandler(IPythonHandler):
             assert len(inter_info) != 0
         except AssertionError as e:
             print(e)
-            self.error_and_return("Cannot find wlan0 device interface")
+            # self.error_and_return("Cannot find wlan0 device interface")
             return
+
         inter_info = inter_info[0].split(' ')
         
         for data in inter_info:
@@ -100,9 +104,9 @@ class WifiHandler(IPythonHandler):
                 wlan0_info = data.split(':')[1]
 
         if wlan0_info != 'off/any':
-            wifi_info[0]['SSID'] = wlan0_info
-            wifi_info[0]['STATUS'] = True
-            
+            wifi_info['wifi_status'] = True
+            wifi_info['wifi_SSID'] = wlan0_info
+        
         return wifi_info
     
     def is_wifi_connected(self, current_wifi_info):
@@ -113,6 +117,9 @@ class WifiHandler(IPythonHandler):
 
     def scan_candidate_wifi(self):
         """ scanning candidate wifi information
+            return : {
+                'SSID' : ['PSK', 'Signal Strength']
+            }
         """
 
         cmd = self.select_cmd('search_wifi_list')
@@ -124,12 +131,12 @@ class WifiHandler(IPythonHandler):
                     output = proc.communicate(input=(sudo_password+'\n').encode())
             except SubprocessError as e:
                 print(e)
-                self.error_and_return('Improper Popen object opened')
+                # self.error_and_return('Improper Popen object opened')
                 return
             
             # wlan0 interface is already opened
             if output[1] == b'':
-                self.is_inter_up = True
+                self.is_interface_up = True
                 break
             # wlan0 interface is closed or resource busy
             elif output[0] == b'':
@@ -145,13 +152,13 @@ class WifiHandler(IPythonHandler):
         tmp_scanned_wifi_info = dict()
         for each_line in output[0].decode('utf-8').split('\n'):
             tmp_each_info = []
-            if each_line.find('BSS') != -1 and each_line.find(interface_name) != -1:
+            if each_line.find('BSS') != -1 and each_line.find('on wlan0') != -1:
                 if ssid_cnt != 0 and len(tmp_scanned_wifi_info.get(ssid_cnt)) == 2:
                     tmp_scanned_wifi_info[ssid_cnt].append("FREE")
                 ssid_cnt += 1
                 tmp_scanned_wifi_info[ssid_cnt] = []
             elif each_line.find('signal') != -1:
-                tmp_scanned_wifi_info[ssid_cnt].append(int(float(each_line.split(' ')[1])))
+                tmp_scanned_wifi_info[ssid_cnt].append(each_line.split(' ')[1])
             elif each_line.find('SSID:') != -1:
                 tmp_ssid = each_line.split(' ')[1]
                 if tmp_ssid != '' and tmp_ssid.find('x00') == -1:
@@ -164,7 +171,9 @@ class WifiHandler(IPythonHandler):
                                                 columns=['SIGNAL', 'SSID', 'PSK'])[['SSID', 'PSK', 'SIGNAL']]
         df_tmp_psk = df_scanned_wifi_info[['SSID', 'PSK']].drop_duplicates()
         df_tmp_signal = df_scanned_wifi_info.groupby('SSID').SIGNAL.min().reset_index(name = "SIGNAL")
-        wifi_info = pd.merge(df_tmp_psk, df_tmp_signal, how="inner", on="SSID").sort_values(by=['SIGNAL']).to_dict('records')
+        wifi_info = pd.merge(
+            df_tmp_psk, df_tmp_signal, how="inner", on="SSID"
+        ).sort_values(by=['SIGNAL']).set_index('SSID', drop=True).T.to_dict('list')
 
         return wifi_info
 
@@ -176,7 +185,7 @@ class WifiHandler(IPythonHandler):
                 output = proc.communicate(input=(sudo_password+'\n').encode())
         except SubprocessError as e:
             print(e)
-            self.error_and_return('Improper Popen object opened')
+            # self.error_and_return('Improper Popen object opened')
             return
 
         target_ssid = data.get('ssid')
@@ -197,86 +206,70 @@ class WifiHandler(IPythonHandler):
             subprocess.run(cmd)
         except SubprocessError as e:
             print(e)
-            self.error_and_return('Improper Popen object opened')
+            # self.error_and_return('Improper Popen object opened')
             return
 
         # Check if wifi connect
         cmd = self.select_cmd('iwconfig')
         while True:
             wifi_info = self.get_current_wifi_info()
-            if wifi_info.get('STATUS'):
+            if wifi_info.get('wifi_status'):
                 break
             time.sleep(0.01)
 
         return wifi_info
 
-    def test(self):
-        
+    def write_wpa(self, ssid, psk):
+
+        cmd_copy = self.select_cmd('copy_wpa_supplicant')
+        cmd_chmod = self.select_cmd('change_mode')
         try:
-            data = json.loads(self.request.body.decode('utf-8'))
-        except Exception as e :
+            subprocess.run(cmd_copy)
+            subprocess.run(cmd_chmod)
+        except SubprocessError as e:
             print(e)
-            return 'error'
-
-        return data
-                
-
-class WifiGetter(WifiHandler):
-
-    # return the possible wifi list
-    def get(self):        
-        """ Communication interface with jupyter notebook
-        """
-
-        # deteremine the wireless status of raspberry Pi
-        wifi_list = self.scan_candidate_wifi()
-        print(wifi_list)
-        if self.is_inter_up:
-            current_wifi_info = self.get_current_wifi_info()
-            for each_info in wifi_list:
-                if each_info.get('SSID') == 'DREAMPLUS_GUEST':
-                    current_wifi_info[0]['PSK'] = each_info.get('PSK')
-                    current_wifi_info[0]['SIGNAL'] = each_info.get('SIGNAL')
-
-            self.write({'status' : 200, 
-                        'statusText' : 'current wifi information',
-                        'current_wifi_data' : current_wifi_info,
-                        'whole_wifi_data' : wifi_list
-            })
-        else: 
-            self.write({'status' : 200, 'statusText' : 'interface off'})
-
-class WifiSetter(WifiHandler):
-    
-    # def put(self):
+            # self.error_and_return('Copy wpa_supplicant error')
+            return
         
-    #     data = {
-    #         'SSID' : 'DREAMPLUS_GEUST',
-    #         'PSK' : 'welcome#'
-    #     }
+        # write wifi config to file
+        with open(user_directory, 'a') as f:
+            
+            f.write('\n')
+            f.write('network={\n')
+            f.write('    ssid="' + ssid + '"\n')
+            f.write('    psk="' + psk + '"\n')
+            f.write('}\n')
+            f.close()
+        
+        cmd_replace = self.select_cmd('replace_wpa_supplicant')
 
-    #     target_index = self.is_pi_have_ssid(data)
-    #     # raspberrypi already have target wifi information
-    #     if target_index >= 0:
-    #         wifi_info = self.select_network(target_index)
-    #     # raspberrypi do not have target wifi information
-    #     else:
-    #         pass
+        try:
+            subprocess.run(cmd_replace)
+        except SubprocessError as e:
+            print(e)
+            # self.error_and_return('Replace error occur')
+            return
+    
+    def reconfig_networks(self):
+        cmd_recon = self.select_cmd('interface_reconfigure')
+        try:
+            subprocess.run(cmd_recon)
+        except SubprocessError as e:
+            print(e)
+            # self.error_and_return('Copy wpa_supplicant error')
+            return
 
-    def put(self):
-        data = self.test()
-        print(data)
-        # self.write({
-        #     'status' : 200,
-        #     'data' : data
-        # })
 
-
-def setup_handlers(nbapp):
-    # Wifi Setting
-    # route_pattern_setting_wifi = ujoin(nbapp.settings['base_url'], '/wifi/setting')
-    # nbapp.add_handlers('.*', [(route_pattern_setting_wifi, WifiSetter)])
-
-    # Scanning wifi list
-    route_pattern_wifi_list = ujoin(nbapp.settings['base_url'], '/wifi/scan')
-    nbapp.add_handlers('.*', [(route_pattern_wifi_list, WifiGetter)])
+if __name__ == "__main__":
+    wifi = WifiHandler()
+    data = {
+            'ssid' : 'DREAMPLUS_13F',
+            'psk' : 'dreamtt3!'
+    }
+    ssid = data.get('ssid')
+    psk = data.get('psk')
+    wifi.write_wpa(ssid, psk)
+    wifi.reconfig_networks()
+    index = wifi.is_pi_have_ssid(data)
+    if index >=0:
+        wifi.select_network(index)
