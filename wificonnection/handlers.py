@@ -113,9 +113,6 @@ class WifiHandler(IPythonHandler):
 
     def scan_candidate_wifi(self):
         """ scanning candidate wifi information
-            return : {
-                'SSID' : ['PSK', 'Signal Strength']
-            }
         """
 
         cmd = self.select_cmd('search_wifi_list')
@@ -207,11 +204,21 @@ class WifiHandler(IPythonHandler):
         cmd = self.select_cmd('iwconfig')
         while True:
             wifi_info = self.get_current_wifi_info()
-            if wifi_info.get('wifi_status'):
+            if wifi_info.get('STATUS'):
                 break
             time.sleep(0.01)
 
         return wifi_info
+
+    def test(self):
+        
+        try:
+            data = json.loads(self.request.body.decode('utf-8'))
+        except Exception as e :
+            print(e)
+            return 'error'
+
+        return data
                 
 
 class WifiGetter(WifiHandler):
@@ -228,7 +235,7 @@ class WifiGetter(WifiHandler):
             for each_info in wifi_list:
                 if each_info.get('SSID') == 'DREAMPLUS_GUEST':
                     current_wifi_info[0]['PSK'] = each_info.get('PSK')
-                    current_wifi_info[0]['STATUS'] = each_info.get('STATUS')
+                    current_wifi_info[0]['SIGNAL'] = each_info.get('SIGNAL')
 
             self.write({'status' : 200, 
                         'statusText' : 'current wifi information',
@@ -240,26 +247,34 @@ class WifiGetter(WifiHandler):
 
 class WifiSetter(WifiHandler):
     
-    def put(self):
+    # def put(self):
         
-        data = {
-            'ssid' : 'DREAMPLUS_GEUST',
-            'psk' : 'welcome#'
-        }
+    #     data = {
+    #         'SSID' : 'DREAMPLUS_GEUST',
+    #         'PSK' : 'welcome#'
+    #     }
 
-        target_index = self.is_pi_have_ssid(data)
-        # raspberrypi already have target wifi information
-        if target_index >= 0:
-            wifi_info = self.select_network(target_index)
-        # raspberrypi do not have target wifi information
-        else:
-            pass
+    #     target_index = self.is_pi_have_ssid(data)
+    #     # raspberrypi already have target wifi information
+    #     if target_index >= 0:
+    #         wifi_info = self.select_network(target_index)
+    #     # raspberrypi do not have target wifi information
+    #     else:
+    #         pass
+
+    def put(self):
+        data = self.test()
+        print(data)
+        # self.write({
+        #     'status' : 200,
+        #     'data' : data
+        # })
 
 
 def setup_handlers(nbapp):
-    # Determine whether wifi connected
-    # route_pattern_current_wifi = ujoin(nbapp.settings['base_url'], '/wifi/current')
-    # nbapp.add_handlers('.*', [(route_pattern_current_wifi, CurrentWifiHandler)])
+    # Wifi Setting
+    route_pattern_setting_wifi = ujoin(nbapp.settings['base_url'], '/wifi/setting')
+    nbapp.add_handlers('.*', [(route_pattern_setting_wifi, WifiSetter)])
 
     # Scanning wifi list
     route_pattern_wifi_list = ujoin(nbapp.settings['base_url'], '/wifi/scan')

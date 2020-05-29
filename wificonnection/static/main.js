@@ -12,22 +12,16 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
                 href: requirejs.toUrl('./main.css')
             }).appendTo('head')
 
-            function addList(name) {
-                var wifiListLi = $('<li class="wifi-item" />')
-                var wifiButtonA = $('<a href="javascript:;" class="btn-wifi" />')
-                var wifiNameSpan = $('<span class="wifi-name" />')
-                var wifiPrivateSpan = $('<span class="wifi-private" />')
-                wifiListUl.append(wifiListLi.append(wifiButtonA.append(wifiNameSpan.text(name)).append(wifiPrivateSpan)))
-                div.append(wifiListUl)
-            }
 
+
+            var div = $('<div/>')
             var wifiDiv = $('<div class="wifi-connect" />')
 
             var wifiTitleDiv = $('<div class="wifi-title" />')
             var wifiTitSpan = $('<span class="tit-wifi" />').text("wifi")
             var wifiTxtStatus = $('<span class="txt-status active" />').text("wifi is connectig")
 
-            var toggleBtn = $('<a href="javascript:;" class="toggle-wrap" />')
+            var toggleBtn = $('<a href="javascript:;" class="toggle-wrap active" />')
             var toggleBar = $('<span class="toggle-bar" />')
             var toggleThumb = $('<span class="toggle-thumb" />')
 
@@ -54,7 +48,6 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
 
             wifiDiv.append(wifiTitleDiv).append(toggleBtn).append(progressImg).append(retryBtn)
 
-            var div = $('<div/>')
             div.append(wifiDiv)
 
             var wifiListUl = $('<ul class="wifi-list"/>')
@@ -80,8 +73,26 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
                 }]
             }
 
+            function addList(name) {
+                var wifiListLi = $('<li class="wifi-item" />')
+                var wifiButtonA = $('<a href="javascript:;" class="btn-wifi" />')
+                var wifiNameSpan = $('<span class="wifi-name" />')
+                var wifiPrivateSpan = $('<span class="wifi-private" />')
+                wifiListUl.append(wifiListLi.append(wifiButtonA.append(wifiNameSpan.text(name)).append(wifiPrivateSpan)))
+                $('.progress').css("display", "none")
+                div.append(wifiListUl)
+            }
+
             $(document).on('click', '.toggle-wrap', function(){
-                $(this).hasClass('active') ?  $(this).removeClass('active') :  $(this).addClass('active')
+                if($(this).hasClass('active')){
+                    $('.progress').css("display", "none")
+                    $('.btn-retry').css("display", "none")
+                    $(this).removeClass('active')
+                }else {
+                    $('.progress').css("display", "block")
+                    $('.btn-retry').css("display", "block")
+                    $(this).addClass('active')
+                }
             })
 
             
@@ -92,33 +103,37 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
                 dataType: "json",
                 contentType: 'application/json',
                 success: function(data) {
-                    if(testData.statusText === "interface off"){
-                        $('.progress').css("display", "block")
+                    if(data.statusText === "interface off"){
+                        $('.progress').css("display", "none")
+                        $('.btn-retry').css("display", "none")
                     } else {
+                        $('.toggle-wrap').addClass('active')
                         $('.progress').css("display", "block")
-                    }
-                    // wifiList = data.data
-                    // display feedback to user
+                        $('.btn-retry').css("display", "block")
+                        data.current_wifi_data.forEach(function(v){
+                            addList(v.SSID)
+                        })
+                        data.whole_wifi_data.forEach(function(v){
+                            addList(v.SSID)
+                        })
 
-                    // wifiList.forEach(function(v){
-                    //     addList(v)
-                    // })
+                    }
                     console.log(data)
                 },
                 error: function(data) {
-                    if(testData.statusText !== "interface off"){
-                        $('.progress').css("display", "none")
-                        $('.')
-                    } else {
-                        testData.current_wifi_data.forEach(function(v){
-                            addList(v.ssid)
-                        })
-                        testData.whole_wifi_data.forEach(function(v){
-                            addList(v.ssid)
-                        })
-                        $('.toggle-wrap').addClass('active')
-                        $('.progress').css("display", "block")
-                    }
+                    // if(testData.statusText !== "interface off"){
+                    //     $('.progress').css("display", "none")
+                    //     $('.btn-retry').css("display", "none")
+                    // } else {
+                    //     testData.current_wifi_data.forEach(function(v){
+                    //         addList(v.ssid)
+                    //     })
+                    //     testData.whole_wifi_data.forEach(function(v){
+                    //         addList(v.ssid)
+                    //     })
+                    //     $('.toggle-wrap').addClass('active')
+                    //     $('.progress').css("display", "block")
+                    // }
                 }
 
             };
@@ -127,7 +142,6 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
             dialog.modal({
                 body: div ,
                 title: 'Wifi list',
-                footer: wifiListUl,
                 // buttons: {'Commit and Push':
                 //             { class:'btn-primary btn-large',
                 //               click:on_ok
@@ -138,6 +152,27 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
                 keyboard_manager: env.notebook.keyboard_manager,
             })
 
+            var payload = {
+                'SSID' : "test",
+                'PSK' : "test111"
+              };
+            var settingSettings = {
+                url : '/wifi/setting',
+                processData : false,
+                type : "PUT",
+                dataType: "json",
+                data: JSON.stringify(payload),
+                contentType: 'application/json',
+                success: function(data) {
+                   
+                    console.log(data)
+                },
+                error: function(data) {
+
+                }
+
+            };
+            $.ajax(settingSettings);
         }
     }
 
