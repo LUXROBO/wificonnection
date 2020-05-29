@@ -12,44 +12,29 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
                 href: requirejs.toUrl('./main.css')
             }).appendTo('head')
 
-            var wifiList = ['LUXROBO1-5G','LUXROBO2-5G','LUXROBO3-5G','LUXROBO4-5G','LUXROBO5-5G','LUXROBO6-5G','LUXROBO7-5G','LUXROBO8-5G','LUXROBO9-5G']
-            var currentWifiData;
-
             function addList(name) {
                 var wifiListLi = $('<li class="wifi-item" />')
                 var wifiButtonA = $('<a href="javascript:;" class="btn-wifi" />')
                 var wifiNameSpan = $('<span class="wifi-name" />')
                 var wifiPrivateSpan = $('<span class="wifi-private" />')
                 wifiListUl.append(wifiListLi.append(wifiButtonA.append(wifiNameSpan.text(name)).append(wifiPrivateSpan)))
+                div.append(wifiListUl)
             }
 
-            var currentSettings = {
-                url : '/wifi/current',
-                processData : false,
-                type : "GET",
-                dataType: "json",
-                contentType: 'application/json',
-                success: function(data) {
-                    currentWifiData = data
+            var wifiDiv = $('<div class="wifi-connect" />')
 
-                    // display feedback to user
-                    console.log(data)
-                },
-                error: function(data) {
+            var wifiTitleDiv = $('<div class="wifi-title" />')
+            var wifiTitSpan = $('<span class="tit-wifi" />').text("wifi")
+            var wifiTxtStatus = $('<span class="txt-status active" />').text("wifi is connectig")
 
-                    // display feedback to user
-                    console.log('error')
-                }
+            var toggleBtn = $('<a href="javascript:;" class="toggle-wrap" />')
+            var toggleBar = $('<span class="toggle-bar" />')
+            var toggleThumb = $('<span class="toggle-thumb" />')
 
-            };
+            var progressImg = $('<img class="progress"/>').attr('src','./progress.svg')
 
-            // $.ajax(currentSettings)
-
-            var p = $('<p class="wifi-connect" />').text("Wifi")
-            var toggleDiv = $('<a href="javascript:;" class="toggle-wrap" />')
-            var toggleBar = $('<span class="toggle-bar"/>')
-            var toggleThumb = $('<span class="toggle-thumb">')
-            var progressImg = $('<img class="progress"/>').attr('src','./progress.svg');
+            var retryBtn = $('<a href="javascript:;" class="btn-retry" />')
+            var retryImg = $('<img class="retry" />').attr('src','./retry.svg')
 
             progressImg.attr({
                 rel: 'stylesheet',
@@ -57,8 +42,49 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
                 src: requirejs.toUrl('./progress.svg')
             })
 
-            toggleDiv.append(toggleBar).append(toggleThumb)
+            retryImg.attr({
+                rel: 'stylesheet',
+                type: 'text/css',
+                src: requirejs.toUrl('./retry.svg')
+            })
 
+            wifiTitleDiv.append(wifiTitSpan).append(wifiTxtStatus)
+            toggleBtn.append(toggleBar).append(toggleThumb)
+            retryBtn.append(retryImg)
+
+            wifiDiv.append(wifiTitleDiv).append(toggleBtn).append(progressImg).append(retryBtn)
+
+            var div = $('<div/>')
+            div.append(wifiDiv)
+
+            var wifiListUl = $('<ul class="wifi-list"/>')
+
+            // toggleDiv.append(toggleBar).append(toggleThumb)
+
+            testData = {
+                "statusText" : "interface off",
+                "current_wifi_data" : [{
+                    "ssid" : "test",
+                    "psk" : "PSK",
+                    "signal" : -47,
+                    "status" : true
+                }],
+                "whole_wifi_data" : [{
+                    ssid: "test1",
+                    psk : "PSK",
+                    signal : -47
+                },{
+                    ssid: "test2",
+                    psk : "PSK",
+                    signal : -56
+                }]
+            }
+
+            $(document).on('click', '.toggle-wrap', function(){
+                $(this).hasClass('active') ?  $(this).removeClass('active') :  $(this).addClass('active')
+            })
+
+            
             var settings = {
                 url : '/wifi/scan',
                 processData : false,
@@ -66,79 +92,37 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
                 dataType: "json",
                 contentType: 'application/json',
                 success: function(data) {
-                    wifiList = data.data
+                    if(testData.statusText === "interface off"){
+                        $('.progress').css("display", "block")
+                    } else {
+                        $('.progress').css("display", "block")
+                    }
+                    // wifiList = data.data
                     // display feedback to user
 
-                    wifiList.forEach(function(v){
-                        addList(v)
-                    })
+                    // wifiList.forEach(function(v){
+                    //     addList(v)
+                    // })
                     console.log(data)
                 },
                 error: function(data) {
-
-                    // display feedback to user
-                    console.log('error')
+                    if(testData.statusText !== "interface off"){
+                        $('.progress').css("display", "none")
+                        $('.')
+                    } else {
+                        testData.current_wifi_data.forEach(function(v){
+                            addList(v.ssid)
+                        })
+                        testData.whole_wifi_data.forEach(function(v){
+                            addList(v.ssid)
+                        })
+                        $('.toggle-wrap').addClass('active')
+                        $('.progress').css("display", "block")
+                    }
                 }
 
             };
             $.ajax(settings);
-
-            $(document).on('click', '.toggle-wrap', function(){
-                $(this).hasClass('active') ?  $(this).removeClass('active') :  $(this).addClass('active')
-            })
-
-            p.append(toggleDiv).append(progressImg)
-            var div = $('<div/>')
-            div.append(p)
-
-            var wifiListUl = $('<ul class="wifi-list"/>')
-
-
-
-
-
-
-
-            div.append(wifiListUl)
-
-
-
-
-            var container = $('#notebook-container')
-
-            
-            // get the canvas for user feedback
-            var container = $('#notebook-container');
-
-            // function on_ok(){
-            //     // var re = /^\/notebooks(.*?)$/;
-            //     // var filepath = window.location.pathname.match(re)[1];
-            //     var settings = {
-            //         url : '/wifi/scan',
-            //         processData : false,
-            //         type : "GET",
-            //         dataType: "json",
-            //         contentType: 'application/json',
-            //         success: function(data) {
-
-            //             // display feedback to user
-            //             console.log('sucess')
-            //         },
-            //         error: function(data) {
-
-            //             // display feedback to user
-            //             console.log('error')
-            //         }
-            //     };
-
-                // display preloader during commit and push
-                // var preloader = '<img class="commit-feedback" src="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.5.8/ajax-loader.gif">';
-                // container.prepend(preloader);
-
-                // commit and push
-                
-            // }
-
 
             dialog.modal({
                 body: div ,
@@ -157,39 +141,6 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
         }
     }
 
-    var current_wifi = {
-        help: 'wifi',
-        icon : 'fa-wifi',
-        help_index : '',
-        handler : function (env) {
-
-        
-
-
-            var currentSettings = {
-                url : '/wifi/current',
-                processData : false,
-                type : "GET",
-                dataType: "json",
-                contentType: 'application/json',
-                success: function(data) {
-
-                    // display feedback to user
-                    console.log(data)
-                },
-                error: function(data) {
-
-                    // display feedback to user
-                    console.log('error')
-                }
-
-            };
-
-            $.ajax(currentSettings);
-
-
-        }
-    }
     function _on_load(){
 
         // log to console
@@ -197,10 +148,9 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
 
         // register new action
         var action_name = IPython.keyboard_manager.actions.register(search_wifi, 'search wifi list')
-        var action_name2 = IPython.keyboard_manager.actions.register(current_wifi, 'current wifi list')
 
         // add button for new action
-        IPython.toolbar.add_buttons_group([action_name, action_name2])
+        IPython.toolbar.add_buttons_group([action_name])
 
     }
 

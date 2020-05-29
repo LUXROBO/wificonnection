@@ -3,6 +3,7 @@
 }
 .wifi-connect {
   position: relative;
+  display: inline-block;
   margin-left: 25px;
 }
 .toggle-wrap {
@@ -11,8 +12,9 @@
   width: 34px;
   height: 20px;
   padding: 3px 0;
+  margin-top: 6px;
   margin-left: 14px;
-  vertical-align: bottom;
+  vertical-align: super;
 }
 .toggle-bar {
   display: inline-block;
@@ -30,6 +32,7 @@
   height: 20px;
   background-color: #fff;
   border-radius: 10px;
+  border: 1px solid #eee;
 }
 
 .active .toggle-bar {
@@ -40,6 +43,7 @@
   left: inherit;
   right: 0;
   background-color: #45d6df;
+  border:none;
 }
 
 .wifi-list {
@@ -71,15 +75,47 @@
 
 .progress{
   position: absolute;
-  top: 3px;
+  top: 6px;
   left: -30px; 
-  animation: rotate_image 10s linear infinite;
+  animation: rotate_image 5s linear infinite;
   transform-origin: 50% 50%;
   background-color: #fff;
+}
+
+.btn-retry{
+  display: block;
+  position: absolute;
+  top: 3px;
+  right: -40px; 
 }
 
 @keyframes rotate_image{
   100% {
     transform: rotate(360deg)
   }
+}
+
+.tit-wifi {
+  display: block;
+}
+
+.wifi-title {
+  display: inline-block;
+  width: 110px;
+}
+
+.txt-status {
+  display: block;
+  height: 11px;
+  font-size: 10px;
+  font-family: Roboto;
+  font-weight: normal;
+  font-style: normal;
+  line-height: normal;
+  letter-spacing: 0.07px;
+  color: #f89a93;
+}
+
+.txt-status.active {
+  color:#45d6df
 }

@@ -6,8 +6,8 @@ import subprocess
 import pandas as pd
 from collections import OrderedDict
 
-interface_name = 'wlan0'
-sudo_password = 'raspberry'
+interface_name = 'wlx88366cf69460'
+sudo_password = 'luxrobo'
 
 class WifiHandler(IPythonHandler):
     
@@ -68,10 +68,12 @@ class WifiHandler(IPythonHandler):
 
     def get_current_wifi_info(self):
         
-        wifi_info = {
-            'wifi_status' : False,
-            'wifi_SSID' : None
-        }
+        wifi_info = [{
+            'SSID' : None,
+            'PSK' : None,
+            'SIGNAL' : 0,
+            'STATUS' : False
+        }]
 
         cmd = self.select_cmd('iwconfig')
         try:
@@ -98,9 +100,9 @@ class WifiHandler(IPythonHandler):
                 wlan0_info = data.split(':')[1]
 
         if wlan0_info != 'off/any':
-            wifi_info['wifi_status'] = True
-            wifi_info['wifi_SSID'] = wlan0_info
-        
+            wifi_info[0]['SSID'] = wlan0_info
+            wifi_info[0]['STATUS'] = True
+            
         return wifi_info
     
     def is_wifi_connected(self, current_wifi_info):
@@ -130,7 +132,7 @@ class WifiHandler(IPythonHandler):
             
             # wlan0 interface is already opened
             if output[1] == b'':
-                self.is_interface_up = True
+                self.is_inter_up = True
                 break
             # wlan0 interface is closed or resource busy
             elif output[0] == b'':
@@ -146,13 +148,13 @@ class WifiHandler(IPythonHandler):
         tmp_scanned_wifi_info = dict()
         for each_line in output[0].decode('utf-8').split('\n'):
             tmp_each_info = []
-            if each_line.find('BSS') != -1 and each_line.find('on wlan0') != -1:
+            if each_line.find('BSS') != -1 and each_line.find(interface_name) != -1:
                 if ssid_cnt != 0 and len(tmp_scanned_wifi_info.get(ssid_cnt)) == 2:
                     tmp_scanned_wifi_info[ssid_cnt].append("FREE")
                 ssid_cnt += 1
                 tmp_scanned_wifi_info[ssid_cnt] = []
             elif each_line.find('signal') != -1:
-                tmp_scanned_wifi_info[ssid_cnt].append(each_line.split(' ')[1])
+                tmp_scanned_wifi_info[ssid_cnt].append(int(float(each_line.split(' ')[1])))
             elif each_line.find('SSID:') != -1:
                 tmp_ssid = each_line.split(' ')[1]
                 if tmp_ssid != '' and tmp_ssid.find('x00') == -1:
@@ -165,9 +167,7 @@ class WifiHandler(IPythonHandler):
                                                 columns=['SIGNAL', 'SSID', 'PSK'])[['SSID', 'PSK', 'SIGNAL']]
         df_tmp_psk = df_scanned_wifi_info[['SSID', 'PSK']].drop_duplicates()
         df_tmp_signal = df_scanned_wifi_info.groupby('SSID').SIGNAL.min().reset_index(name = "SIGNAL")
-        wifi_info = pd.merge(
-            df_tmp_psk, df_tmp_signal, how="inner", on="SSID"
-        ).sort_values(by=['SIGNAL']).set_index('SSID', drop=True).T.to_dict('list')
+        wifi_info = pd.merge(df_tmp_psk, df_tmp_signal, how="inner", on="SSID").sort_values(by=['SIGNAL']).to_dict('records')
 
         return wifi_info
 
@@ -213,8 +213,6 @@ class WifiHandler(IPythonHandler):
 
         return wifi_info
                 
-        
-        
 
 class WifiGetter(WifiHandler):
 
@@ -226,7 +224,11 @@ class WifiGetter(WifiHandler):
         # deteremine the wireless status of raspberry Pi
         wifi_list = self.scan_candidate_wifi()
         if self.is_inter_up:
-            current_wifi = self.get_current_wifi_info
+            current_wifi_info = self.get_current_wifi_info()
+            for each_info in wifi_list:
+                if each_info.get('SSID') == 'DREAMPLUS_GUEST':
+                    current_wifi_info[0]['PSK'] = each_info.get('PSK')
+                    current_wifi_info[0]['STATUS'] = each_info.get('STATUS')
 
             self.write({'status' : 200, 
                         'statusText' : 'current wifi information',
@@ -253,13 +255,11 @@ class WifiSetter(WifiHandler):
         else:
             pass
 
-        
-
 
 def setup_handlers(nbapp):
     # Determine whether wifi connected
-    route_pattern_current_wifi = ujoin(nbapp.settings['base_url'], '/wifi/current')
-    nbapp.add_handlers('.*', [(route_pattern_current_wifi, CurrentWifiHandler)])
+    # route_pattern_current_wifi = ujoin(nbapp.settings['base_url'], '/wifi/current')
+    # nbapp.add_handlers('.*', [(route_pattern_current_wifi, CurrentWifiHandler)])
 
     # Scanning wifi list
     route_pattern_wifi_list = ujoin(nbapp.settings['base_url'], '/wifi/scan')
