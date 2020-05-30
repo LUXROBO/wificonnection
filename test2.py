@@ -188,15 +188,17 @@ class WifiHandler():
             # self.error_and_return('Improper Popen object opened')
             return
 
+        print(output)
         target_ssid = data.get('ssid')
+        print(target_ssid)
         output = output[0].decode('utf-8')
-        target_line = [line for line in output.split('\n') if line.find(target_ssid) == -1]
-        wifi_index = int(target_line[1][0])
+        target_line = [line for line in output.split('\n') if line.find(target_ssid) != -1]
+        print(target_line)
 
-        if wifi_index >= 0:
-            return wifi_index
-        else:
+        if not target_line:
             return -1
+        else:
+            return int(target_line[0][0])
 
     def select_network(self, index):
         cmd = self.select_cmd('wpa_select_network')
@@ -232,15 +234,18 @@ class WifiHandler():
             return
         
         # write wifi config to file
-        with open(user_directory, 'a') as f:
-            
-            f.write('\n')
-            f.write('network={\n')
-            f.write('    ssid="' + ssid + '"\n')
-            f.write('    psk="' + psk + '"\n')
-            f.write('}\n')
-            f.close()
-        
+        try:
+            with open(user_directory, 'a') as f:
+                f.write('\n')
+                f.write('network={\n')
+                f.write('    ssid="' + ssid + '"\n')
+                f.write('    psk="' + psk + '"\n')
+                f.write('}\n')
+                f.close()
+        except IOError as e:
+            print(e)
+            return
+
         cmd_replace = self.select_cmd('replace_wpa_supplicant')
 
         try:
@@ -268,8 +273,13 @@ if __name__ == "__main__":
     }
     ssid = data.get('ssid')
     psk = data.get('psk')
-    wifi.write_wpa(ssid, psk)
-    wifi.reconfig_networks()
     index = wifi.is_pi_have_ssid(data)
     if index >=0:
+        print('hi')
+        wifi.select_network(index)
+    else:
+        print('hi2')
+        wifi.write_wpa(ssid, psk)
+        wifi.reconfig_networks()
+        index = wifi.is_pi_have_ssid(data)
         wifi.select_network(index)
