@@ -6,10 +6,12 @@ import subprocess
 import pandas as pd
 from collections import OrderedDict
 import time
+
 interface_name = 'wlan0'
 sudo_password = 'raspberry'
 wpa_supplicant = '/etc/wpa_supplicant/wpa_supplicant.conf'
 user_directory = './temp.conf'
+
 class WifiHandler(IPythonHandler):
     
     # input system call parameter
@@ -28,9 +30,11 @@ class WifiHandler(IPythonHandler):
             'replace_wpa_supplicant' : ['sudo', 'mv', '-f', user_directory, wpa_supplicant],
             'change_mode' : ['sudo', 'chmod', '777', user_directory]
         }.get(x, None)
+
     def error_and_return(self, reason):
         # send error
         self.send_error(500, reason=reason)
+
     def interface_up(self):
         # raise the wireless interface 
         cmd = self.select_cmd('interface_up')
@@ -42,6 +46,7 @@ class WifiHandler(IPythonHandler):
             return
         
         self.is_inter_up = True
+
     def interface_down(self):
         # kill the wireless interface
         cmd = self.select_cmd('interface_down')
@@ -53,6 +58,7 @@ class WifiHandler(IPythonHandler):
             return
         
         self.is_inter_up = False
+
     def is_interface_off(self, tmp_str):
         tmp_str = tmp_str.decode('utf-8')
         if tmp_str.find('Resource temporarily unavailable') != -1:
@@ -100,6 +106,7 @@ class WifiHandler(IPythonHandler):
         """ True/false whether wifi connected
         """
         return current_wifi_info.get('wifi_status')
+
     def scan_candidate_wifi(self):
         """ scanning candidate wifi information
         """
@@ -152,6 +159,7 @@ class WifiHandler(IPythonHandler):
         df_tmp_signal = df_scanned_wifi_info.groupby('SSID').SIGNAL.min().reset_index(name = "SIGNAL")
         wifi_info = pd.merge(df_tmp_psk, df_tmp_signal, how="inner", on="SSID").sort_values(by=['SIGNAL']).to_dict('records')
         return wifi_info
+
     def is_pi_have_ssid(self, data):
         
         cmd = self.select_cmd('wpa_list')
@@ -169,6 +177,7 @@ class WifiHandler(IPythonHandler):
             return -1
         else:
             return int(target_line[0][0])
+
     def select_network(self, index):
         cmd = self.select_cmd('wpa_select_network')
         cmd.append(str(index))
@@ -186,9 +195,11 @@ class WifiHandler(IPythonHandler):
                 break
             time.sleep(0.01)
         return wifi_info
+
     def write_wpa(self, ssid, psk):
         cmd_copy = self.select_cmd('copy_wpa_supplicant')
         cmd_chmod = self.select_cmd('change_mode')
+
         try:
             subprocess.run(cmd_copy)
             subprocess.run(cmd_chmod)
@@ -209,13 +220,16 @@ class WifiHandler(IPythonHandler):
         except IOError as e:
             print(e)
             return
+
         cmd_replace = self.select_cmd('replace_wpa_supplicant')
+
         try:
             subprocess.run(cmd_replace)
         except SubprocessError as e:
             print(e)
             self.error_and_return('Replace error occur')
             return
+
     def reconfig_networks(self):
         cmd_recon = self.select_cmd('interface_reconfigure')
         try:
@@ -224,6 +238,7 @@ class WifiHandler(IPythonHandler):
             print(e)
             self.error_and_return('Copy wpa_supplicant error')
             return
+
     def test(self):
         
         try:
@@ -254,6 +269,7 @@ class WifiGetter(WifiHandler):
             })
         else: 
             self.write({'status' : 200, 'statusText' : 'interface off'})
+            
 class WifiSetter(WifiHandler):
     
     # def put(self):
