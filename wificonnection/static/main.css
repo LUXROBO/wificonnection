@@ -1,0 +1,121 @@
+.modal-title {
+  margin-left: 25px;
+}
+.wifi-connect {
+  position: relative;
+  display: inline-block;
+  margin-left: 25px;
+}
+.toggle-wrap {
+  display: inline-block;
+  position: relative;
+  width: 34px;
+  height: 20px;
+  padding: 3px 0;
+  margin-top: 6px;
+  margin-left: 14px;
+  vertical-align: super;
+}
+.toggle-bar {
+  display: inline-block;
+  width: 34px;
+  height: 14px;
+  border-radius: 7px;
+  background-color: rgba(0, 0, 0, 0.38);
+}
+
+.toggle-thumb {
+  position: absolute;
+  top:0;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  background-color: #fff;
+  border-radius: 10px;
+  border: 1px solid #eee;
+}
+
+.active .toggle-bar {
+  background-color: rgba(69, 214, 223, 0.38);
+}
+
+.active .toggle-thumb {
+  left: inherit;
+  right: 0;
+  background-color: #45d6df;
+  border:none;
+}
+
+.wifi-list {
+  overflow: hidden;
+  list-style: none;
+  padding: 0;
+  margin-left: 25px;
+}
+
+.btn-wifi {
+  display: block;
+  padding: 17px 0;
+  text-decoration: none;
+}
+
+.wifi-name {
+  width: 125px;
+  height: 15px;
+  opacity: 0.5;
+  font-family: HelveticaNeue;
+  font-size: 13px;
+  font-weight: normal;
+  font-stretch: normal;
+  font-style:normal;
+  line-height: normal;
+  letter-spacing: normal;
+  color: #000;
+}
+
+.progress{
+  position: absolute;
+  top: 6px;
+  left: -30px; 
+  animation: rotate_image 5s linear infinite;
+  transform-origin: 50% 50%;
+  background-color: #fff;
+}
+
+.btn-retry{
+  display: block;
+  position: absolute;
+  top: 3px;
+  right: -40px; 
+}
+
+@keyframes rotate_image{
+  100% {
+    transform: rotate(360deg)
+  }
+}
+
+.tit-wifi {
+  display: block;
+}
+
+.wifi-title {
+  display: inline-block;
+  width: 110px;
+}
+
+.txt-status {
+  display: block;
+  height: 11px;
+  font-size: 10px;
+  font-family: Roboto;
+  font-weight: normal;
+  font-style: normal;
+  line-height: normal;
+  letter-spacing: 0.07px;
+  color: #f89a93;
+}
+
+.txt-status.active {
+  color:#45d6df
+}
