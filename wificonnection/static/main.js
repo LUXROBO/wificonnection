@@ -153,8 +153,8 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
             })
 
             var payload = {
-                'SSID' : "test",
-                'PSK' : "test111"
+                'SSID' : "DREAMPLUS_13F",
+                'PSK' : "dreamtt3!"
               };
             var settingSettings = {
                 url : '/wifi/setting',
@@ -164,7 +164,7 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
                 data: JSON.stringify(payload),
                 contentType: 'application/json',
                 success: function(data) {
-                   
+
                     console.log(data)
                 },
                 error: function(data) {
