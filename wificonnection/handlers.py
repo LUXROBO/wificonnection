@@ -7,8 +7,8 @@ import pandas as pd
 from collections import OrderedDict
 import time
 
-interface_name = 'wlan0'
-sudo_password = 'raspberry'
+interface_name = 'wlx88366cf69460'
+sudo_password = 'luxrobo'
 wpa_supplicant = '/etc/wpa_supplicant/wpa_supplicant.conf'
 user_directory = './temp.conf'
 
