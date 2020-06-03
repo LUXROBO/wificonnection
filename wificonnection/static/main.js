@@ -12,6 +12,25 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
                 href: requirejs.toUrl('./main.css')
             }).appendTo('head')
 
+            console.log("real?")
+
+            var wifiListDiv = `<div class="wifi-connect">
+                                 <div class="wifi-title">
+                                    <span class="tit-wifi">Wifi</span>
+                                    <span class="txt-status active">wifi is connecting</span>
+                                 </div>
+                                 <a href="javascript:;" class="toggle-wrap active">
+                                    <span class="toggle-bar"></span>
+                                    <span class="toggle-thumb"></span>
+                                 </a>
+                                 <img class="progress" rel="stylesheet" type="text/css">
+                                 <a href="javascript:;" class="btn-retry">
+                                    <img class="retry" src="/nbextensions/wificonnection/retry.svg" rel="styleshhet" type="text/css">
+                                 </a> 
+                               </div>`
+
+
+
 
 
             var div = $('<div/>')
@@ -48,8 +67,9 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
 
             wifiDiv.append(wifiTitleDiv).append(toggleBtn).append(progressImg).append(retryBtn)
 
-            div.append(wifiDiv)
-
+            div.append(wifiListDiv)
+            $('.progress').attr('src','./progress.svg')
+            $('.retry').attr('src','./retry.svg')
             var wifiListUl = $('<ul class="wifi-list"/>')
 
             // toggleDiv.append(toggleBar).append(toggleThumb)
@@ -192,3 +212,4 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
 
     return {load_ipython_extension: _on_load };
 })
+
