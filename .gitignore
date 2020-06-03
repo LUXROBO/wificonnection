@@ -134,3 +134,6 @@ test.py
 
 # vscode
 .vscode
+
+# shell script
+start.sh
