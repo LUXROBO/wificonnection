@@ -11,10 +11,8 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
                 type: 'text/css',
                 href: requirejs.toUrl('./main.css')
             }).appendTo('head')
-
-            console.log("real?")
-
-            var wifiListDiv = `<div class="wifi-connect">
+            var div = $('<div/>')
+            var wifiConnectDiv = `<div class="wifi-connect">
                                  <div class="wifi-title">
                                     <span class="tit-wifi">Wifi</span>
                                     <span class="txt-status active">wifi is connecting</span>
@@ -30,77 +28,90 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
                                </div>`
 
 
+            var settings = {
+            url : '/wifi/scan',
+            processData : false,
+            type : "GET",
+            dataType: "json",
+            contentType: 'application/json',
+            success: function(data) {
+                if(data.statusText === "interface off"){
+                    console.log("off")
+                    $('.progress').css("display", "none")
+                    $('.btn-retry').css("display", "none")
+                } else {
+                    console.log("on")
+                    $('.toggle-wrap').addClass('active')
+                    $('.progress').css("display", "block")
+                    $('.btn-retry').css("display", "block")
+                    data.current_wifi_data.forEach(function(v){
+                        addList(v.SSID,v.PSK,v.SIGNAL,v.STATUS)
+                    })
+                    data.whole_wifi_data.forEach(function(v){
+                        addList(v.SSID,v.PSK,v.SIGNAL,v.STATUS)
+                    })
 
-
-
-            var div = $('<div/>')
-            var wifiDiv = $('<div class="wifi-connect" />')
-
-            var wifiTitleDiv = $('<div class="wifi-title" />')
-            var wifiTitSpan = $('<span class="tit-wifi" />').text("wifi")
-            var wifiTxtStatus = $('<span class="txt-status active" />').text("wifi is connectig")
-
-            var toggleBtn = $('<a href="javascript:;" class="toggle-wrap active" />')
-            var toggleBar = $('<span class="toggle-bar" />')
-            var toggleThumb = $('<span class="toggle-thumb" />')
-
-            var progressImg = $('<img class="progress"/>').attr('src','./progress.svg')
-
-            var retryBtn = $('<a href="javascript:;" class="btn-retry" />')
-            var retryImg = $('<img class="retry" />').attr('src','./retry.svg')
-
-            progressImg.attr({
-                rel: 'stylesheet',
-                type: 'text/css',
-                src: requirejs.toUrl('./progress.svg')
-            })
-
-            retryImg.attr({
-                rel: 'stylesheet',
-                type: 'text/css',
-                src: requirejs.toUrl('./retry.svg')
-            })
-
-            wifiTitleDiv.append(wifiTitSpan).append(wifiTxtStatus)
-            toggleBtn.append(toggleBar).append(toggleThumb)
-            retryBtn.append(retryImg)
-
-            wifiDiv.append(wifiTitleDiv).append(toggleBtn).append(progressImg).append(retryBtn)
-
-            div.append(wifiListDiv)
-            $('.progress').attr('src','./progress.svg')
-            $('.retry').attr('src','./retry.svg')
-            var wifiListUl = $('<ul class="wifi-list"/>')
-
-            // toggleDiv.append(toggleBar).append(toggleThumb)
-
-            testData = {
-                "statusText" : "interface off",
-                "current_wifi_data" : [{
-                    "ssid" : "test",
-                    "psk" : "PSK",
-                    "signal" : -47,
-                    "status" : true
-                }],
-                "whole_wifi_data" : [{
-                    ssid: "test1",
-                    psk : "PSK",
-                    signal : -47
-                },{
-                    ssid: "test2",
-                    psk : "PSK",
-                    signal : -56
-                }]
+                }
+                console.log(data)
+            },
+            error: function(data) {
+                // if(testData.statusText !== "interface off"){
+                //     $('.progress').css("display", "none")
+                //     $('.btn-retry').css("display", "none")
+                // } else {
+                //     testData.current_wifi_data.forEach(function(v){
+                //         addList(v.ssid)
+                //     })
+                //     testData.whole_wifi_data.forEach(function(v){
+                //         addList(v.ssid)
+                //     })
+                //     $('.toggle-wrap').addClass('active')
+                //     $('.progress').css("display", "block")
+                // }
             }
 
-            function addList(name) {
-                var wifiListLi = $('<li class="wifi-item" />')
-                var wifiButtonA = $('<a href="javascript:;" class="btn-wifi" />')
-                var wifiNameSpan = $('<span class="wifi-name" />')
-                var wifiPrivateSpan = $('<span class="wifi-private" />')
-                wifiListUl.append(wifiListLi.append(wifiButtonA.append(wifiNameSpan.text(name)).append(wifiPrivateSpan)))
+            };
+            div.append(wifiConnectDiv)
+            $('.progress').attr('src','./progress.svg')
+            $('.retry').attr('src','./retry.svg')
+
+            function addList(name, psk, signal, status=false) {
+                var wifiListUl = $('<ul class="wifi-list"/>')
+                var signalLevel = 0;
+                if(signal > -20) {
+                    signalLevel = 4
+                } else if( -20 > signal >= -30) {
+                    signalLevel = 3
+                } else if( -30 > signal >= -40) {
+                    signalLevel = 2
+                } else if( -40 > signal >= -50) {
+                    signalLevel = 1
+                } else if( -50 > signal) {
+                    signalLevel = 0
+                }
+
+                function current (state) {
+                    return state === true ?`<img class="wifi-current" src="/nbextensions/wificonnection/selected.svg" rel="stylesheet" type="text/css" />` : ""
+                }
+
+                function private (private) {
+                    return private === "PSK" ? `<img class="wifi-private" src="/nbextensions/wificonnection/lock.svg" rel="stylesheet" type="text/css"></img>` : ""
+                }
+
+                var wifiListItem = `<li class="wifi-item">
+                                      <a href="javascript:;" class="btn-wifi">
+                                        <span class="wifi-name">${name}</span>` + current(status)
+                                         + private(psk) +
+                                        `<img class="wifi-strength" src="/nbextensions/wificonnection/wifi-${signalLevel}.svg" rel="stylesheet" type="text/css">
+                                      </a>
+                                    </li>`
+                wifiListUl.append(wifiListItem)
                 $('.progress').css("display", "none")
                 div.append(wifiListUl)
+            }
+
+            function resetList() {
+                $('.wifi-list').remove()
             }
 
             $(document).on('click', '.toggle-wrap', function(){
@@ -108,12 +119,68 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
                     $('.progress').css("display", "none")
                     $('.btn-retry').css("display", "none")
                     $(this).removeClass('active')
+                    resetList()
                 }else {
                     $('.progress').css("display", "block")
                     $('.btn-retry').css("display", "block")
                     $(this).addClass('active')
+                    $.ajax(settings);
                 }
             })
+
+            $(document).on('click', '.btn-wifi', function(){
+                var targetName = $(this).find(".wifi-name").text()
+                var wifiPrivate = !!($(this).find(".wifi-private").length)
+
+                var modalTitle = `<div class="tit-wrap">
+                                    <a href="javascript:;" class="btn-back">
+                                    <img class="back" src="/nbextensions/wificonnection/icon-back.svg" rel="stylesheet" type="text/css" style="display: block;" />
+                                    </a>
+                                    <div class="tit-input">Input password</div>
+                                  </div>`
+
+                var passwordDiv = `<div class="password-box">
+                                     <p class="tit-password">WiFi "${targetName}" is required password.</p>
+                                     <div class="password-wrap invalid">
+                                        <input class="inp-password" type="password" placeholder="Input password">
+                                        <a href="javascript:;" class="btn-visibility">
+                                          <img class="password-visibility active" src="/nbextensions/wificonnection/innvisibility.svg" rel="stylesheet" type="text/css"/>
+                                        </a>
+                                        <span class="txt-invalid"> Invalid password. please try again</span>
+                                      </div>
+                                      <label class="chk-remeber">Remeber this network
+                                        <input type="checkbox" checked="checked"/>
+                                        <span class="checkmark"></span>
+                                      </label>
+                                   </div>`
+                var modalHeaderDiv = $('<div/>')
+                var modalBodyDiv = $('<div/>')
+
+                modalHeaderDiv.append(modalTitle)
+                modalBodyDiv.append(passwordDiv)
+
+                console.log(wifiPrivate)
+                console.log(targetName)
+
+                dialog.modal({
+                    body: modalBodyDiv ,
+                    title: 'Input password',
+                    dialogClass: 'test',
+                    // buttons: {'Commit and Push':
+                    //             { class:'btn-primary btn-large',
+                    //               click:on_ok
+                    //             },
+                    //           'Cancel':{}
+                    //     },
+                    notebook:env.notebook,
+                    keyboard_manager: env.notebook.keyboard_manager,
+                })
+            })
+
+
+
+
+
 
             
             var settings = {
@@ -124,17 +191,19 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
                 contentType: 'application/json',
                 success: function(data) {
                     if(data.statusText === "interface off"){
+                        console.log("off")
                         $('.progress').css("display", "none")
                         $('.btn-retry').css("display", "none")
                     } else {
+                        console.log("on")
                         $('.toggle-wrap').addClass('active')
                         $('.progress').css("display", "block")
                         $('.btn-retry').css("display", "block")
                         data.current_wifi_data.forEach(function(v){
-                            addList(v.SSID)
+                            addList(v.SSID,v.PSK,v.SIGNAL,v.STATUS)
                         })
                         data.whole_wifi_data.forEach(function(v){
-                            addList(v.SSID)
+                            addList(v.SSID,v.PSK,v.SIGNAL,v.STATUS)
                         })
 
                     }
