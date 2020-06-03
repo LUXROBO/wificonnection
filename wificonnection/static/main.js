@@ -165,10 +165,11 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
                 contentType: 'application/json',
                 success: function(data) {
 
-                    console.log(data)
+                    //console.log(data)
+                    console.log('fun')
                 },
                 error: function(data) {
-
+                    console.log('error')
                 }
 
             };

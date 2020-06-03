@@ -83,6 +83,7 @@ class WifiHandler(IPythonHandler):
             print(e)
             self.error_and_return('Improper Popen object opened')
             return
+
         try:
             inter_info = [x for x in output if x.find(interface_name) != -1]
             assert len(inter_info) != 0
@@ -95,9 +96,12 @@ class WifiHandler(IPythonHandler):
         for data in inter_info:
             if data.find('ESSID') != -1:
                 wlan0_info = data.split(':')[1]
+                wlan0_info = wlan0_info[1:-1]
         if wlan0_info != 'off/any':
             wifi_info[0]['SSID'] = wlan0_info
             wifi_info[0]['STATUS'] = True
+            print(wlan0_info)
+            wifi_info[0]['STATUS']
             
         return wifi_info
     
@@ -128,6 +132,7 @@ class WifiHandler(IPythonHandler):
             # wlan0 interface is closed or resource busy
             elif output[0] == b'':
                 if self.is_interface_off(output[1]):
+                    print('interface off')
                     return
                 else:
                     print('resource busy')
@@ -197,14 +202,23 @@ class WifiHandler(IPythonHandler):
         cmd = self.select_cmd('iwconfig')
         while True:
             wifi_info = self.get_current_wifi_info()
+            print('hi')
+            print(wifi_info[0].get('STATUS'))
             if wifi_info[0].get('STATUS'):
                 break
             time.sleep(0.01)
 
         try:
             new_ssid = wifi_info[0].get('SSID')
-            with open('./known_host.txt', 'w') as f:
-                f.write(new_ssid,'\n')
+            print(new_ssid)
+            print(os.getcwd())
+            with open('./known_host.txt', 'a') as f:
+                print('in new_ssid')
+                f.write("fun")
+                # f.write(str(new_ssid))
+                f.write(new_ssid+'\n')
+                f.close()
+            print('bye')
         except IOError as e:
             print(e)
             pass
@@ -259,6 +273,7 @@ class WifiHandler(IPythonHandler):
             return
 
     def is_known_host(self, target_ssid):
+        print('is_known_host')
 
         try:
             with open('./known_host.txt', 'r') as f:
@@ -299,6 +314,7 @@ class WifiGetter(WifiHandler):
 class WifiSetter(WifiHandler):
     
     def put(self):
+        print('put')
 
         try:
             data = json.loads(self.request.body.decode('utf-8'))
@@ -309,8 +325,10 @@ class WifiSetter(WifiHandler):
 
         if self.is_known_host(data.get('SSID')):
             self.write({'status' : 200, 'statusText' : "Known host"})
+            print('known host')
         else:
             self.write({'status' : 200, 'statusText' : "Unknwon host"})
+            print('unknown host')
 
         target_index = self.is_pi_have_ssid(data)
         if target_index < 0:
@@ -320,12 +338,14 @@ class WifiSetter(WifiHandler):
         
         print('target_index : ', target_index)
         current_wifi_info = self.select_network(target_index)
-        
+        print('out of select network')
+        print(current_wifi_info)
         self.write({
             'status' : 200,
-            'statusText' : 'Wifi connect success',
-            'current_wifi_data' : current_wifi_info
+            'statusText' : 'Wifi connect success'
+            # 'current_wifi_data' : 'a'
         })
+        print('done')
 
         
 def setup_handlers(nbapp):
