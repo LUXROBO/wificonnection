@@ -118,6 +118,17 @@
   background-color: #fff;
 }
 
+.connect-progress{
+  display: none;
+  position: absolute;
+  top: 0;
+  right: -150px; 
+  animation: rotate_image 5s linear infinite;
+  transform-origin: 50% 50%;
+  background-color: #fff;
+}
+
+
 .btn-retry{
   display: none;
   position: absolute;
@@ -242,9 +253,10 @@
   caret-color: #f44336;
 }
 
-.password-visibility{
+.btn-visibility{
+  display: block;
   position: absolute;
-  top: 5px;
+  top: 4px;
   right: 8px;
   width: 24px;
   height: 24px;
@@ -270,7 +282,33 @@
   display: inline-block;
 }
 
+.btn-connect {
+  display: block;
+  position: absolute;
+  top: -1px;
+  right: -100px;
+  width: 80px;
+  height: 32px;
+  padding : 9px 18px;
+  border: 1px solid #c8c8c8;
+  border-radius: 5px;
+  box-sizing: border-box;
+  font-size: 12px;
+  font-family: Roboto;
+  font-weight: normal;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: normal;
+  color: #c8c8c8;
+  text-decoration: none;
+}
 
+.btn-connect:hover{
+  color: #fff;
+  background-color: #45d6df;
+  border-color: #45d6df;
+  text-decoration: none;
+}
 
 .chk-remeber {
   position: relative;
@@ -299,7 +337,7 @@
 
 .checkmark {
   position: absolute;
-  top: -3px;
+  top: 0;
   left: 0;
   width: 16px;
   height: 16px;
@@ -322,6 +360,6 @@
   width: 16px;
   height: 16px;
   left:-1px;
-  top: -1px;
+  top: -2px;
   background: url("./icon-selected.svg") no-repeat -3px -3px;
 }
