@@ -251,13 +251,19 @@ class WifiHandler(IPythonHandler):
             return
 
     def wpa_reconfigure(self):
-        cmd_recon = self.select_cmd('interface_reconfigure')
+
+        cmd = self.select_cmd('interface_reconfigure')
         try:
-            subprocess.run(cmd_recon)
+            with Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE) as proc:
+                output = proc.communicate=(input=(WifiHandler.sudo_password+'\n').encode())
         except SubprocessError as e:
             print(e)
             self.error_and_return('Copy wpa_supplicant error')
             return
+
+        print('output ', output)
+            
+        
         
 
     def is_known_host(self, target_ssid):
@@ -283,6 +289,7 @@ class WifiGetter(WifiHandler):
     def get(self):
         """ Communication interface with jupyter notebook
         """
+
         # deteremine the wireless status of raspberry Pi
         whole_wifi_info = self.scan_candidate_wifi()
         if self.is_inter_up:
@@ -305,6 +312,9 @@ class WifiGetter(WifiHandler):
 class WifiSetter(WifiHandler):
     
     def put(self):
+        
+        is_psk_right = False
+
         try:
             data = json.loads(self.request.body.decode('utf-8'))
         except Exception as e:
@@ -333,12 +343,28 @@ class InterfaceDown(WifiHandler):
         # shut down network interface
         self.interface_down()
 
-class InterfaceOn(WifiHandler):
+class InterfaceUP(WifiHandler):
 
     def get(self):
-        pass
 
-        
+        # Network resource up
+        self.interface_up()
+
+        whole_wifi_info = self.scan_candidate_wifi()
+        if self.is_inter_up:
+            current_wifi_info = self.get_current_wifi_info()
+
+            for each_info in whole_wifi_info:
+                if each_info.get('SSID') == current_wifi_info[0]['SSID']:
+                    current_wifi_info[0]['PSK'] = each_info.get('PSK')
+                    current_wifi_info[0]['SIGNAL'] = each_info.get('SIGNAL')
+
+            self.write({
+                'status' : 200, 
+                'statusText' : 'current wifi information',
+                'current_wifi_data' : current_wifi_info,
+                'whole_wifi_data' : whole_wifi_info,
+            })    
         
 def setup_handlers(nbapp):
 
@@ -351,5 +377,9 @@ def setup_handlers(nbapp):
     nbapp.add_handlers('.*', [(route_pattern_wifi_list, WifiGetter)])
 
     # Shutdown network interfae
-    route_pattern_interface_down = ujoin(nbapp.settings['base_url'], '/wifi/inter')
-    nbapp.add_handlers('.*', [(route_pattern_interface_down, InterfaceHandler)])
+    route_pattern_interface_down = ujoin(nbapp.settings['base_url'], '/wifi/interdown')
+    nbapp.add_handlers('.*', [(route_pattern_interface_down, InterfaceDown)])
+
+    # Raise network interface
+    route_patter_interface_up = ujoin(nbapp.settings['base_url'], '/wifi/interup')
+    nbapp.add_handlers('.*', [(route_patter_interface_up, InterfaceUP)])
