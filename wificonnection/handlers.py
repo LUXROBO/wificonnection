@@ -377,6 +377,11 @@ class WifiSetter(WifiHandler):
 
                 # remove copied wpa_supplicant file
                 self.remove_temp_wpa()
+                self.write({
+                    'status' : 200,
+                    'statusText' : 'Wifi connect success',
+                    'data' : current_wifi_info
+                })
             # 비밀번호 틀렸을 때
             else:
                 time.sleep(10)
@@ -387,11 +392,16 @@ class WifiSetter(WifiHandler):
                 })
                 print('password wrong')
                 return
+        else:
+            current_wifi_info = self.select_network(target_index)
+            self.write({
+                'status' : 200,
+                'statusText' : 'Wifi connect success',
+                'data' : current_wifi_info
+            })
 
-        self.write({
-            'status' : 200,
-            'statusText' : 'Wifi connect success',
-        })
+
+        print(current_wifi_info[0])
         print('Wifi has connected')
 
 class InterfaceDown(WifiHandler):
@@ -400,6 +410,11 @@ class InterfaceDown(WifiHandler):
         
         # shut down network interface
         self.interface_down()
+
+        self.write({
+            'status' : 200,
+            'statusText' : 'Interface down'
+        })
 
 class InterfaceUP(WifiHandler):
 

@@ -121,11 +121,17 @@
 .connect-progress{
   display: none;
   position: absolute;
-  top: 0;
-  right: -150px; 
+  top: 3px;
+  right: -135px; 
   animation: rotate_image 5s linear infinite;
   transform-origin: 50% 50%;
   background-color: #fff;
+}
+
+.remember-box .connect-progress {
+  display: block;
+  top : 27px;
+  left: 15px
 }
 
 
@@ -362,4 +368,11 @@
   left:-1px;
   top: -2px;
   background: url("./icon-selected.svg") no-repeat -3px -3px;
+}
+
+.wifi-checked { 
+  display: block;
+  position: absolute;
+  top : 27px;
+  left: 25px;
 }
