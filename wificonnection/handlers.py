@@ -9,6 +9,7 @@ import time
 
 whole_wifi_info = []
 current_wifi_info = []
+temp_conf = str()
 
 class WifiHandler(IPythonHandler):
 
@@ -16,6 +17,7 @@ class WifiHandler(IPythonHandler):
     sudo_password = 'raspberrypi'
     wpa_supplicant = '/etc/wpa_supplicant/wpa_supplicant.conf'
     user_directory = './temp.conf'
+    temp_user_directory = './copied_temp.conf'
     known_host_directory = '~/known_host.txt'
     
     # input system call parameter
@@ -31,7 +33,10 @@ class WifiHandler(IPythonHandler):
             'is_wlan0_up' : ['sudo', 'iwlist', WifiHandler.interface_name, 'scan'],
             'interface_reconfigure' : ['wpa_cli', '-i', WifiHandler.interface_name, 'reconfigure'],
             'copy_wpa_supplicant' : ['sudo', 'cp', '-f', WifiHandler.wpa_supplicant, WifiHandler.user_directory],
-            'replace_wpa_supplicant' : ['sudo', 'mv', '-f', WifiHandler.user_directory, WifiHandler.wpa_supplicant],
+            'remove_temp_wpa_supplicant' : ['sudo', 'rm', '-rf', './*.conf'],
+            'replace_mv_wpa_supplicant' : ['sudo', 'mv', WifiHandler.user_directory, WifiHandler.wpa_supplicant],
+            'replace_mv_temp_wpa_supplicant' : ['sudo', 'mv', WifiHandler.temp_user_directory, WifiHandler.wpa_supplicant],
+            'copy_temp_wpa_supplicant' : ['sudo', 'cp', WifiHandler.user_directory, WifiHandler.temp_user_directory],
             'change_mode' : ['sudo', 'chmod', '777', WifiHandler.user_directory]
         }.get(x, None)
 
@@ -230,6 +235,13 @@ class WifiHandler(IPythonHandler):
             self.error_and_return('Copy wpa_supplicant error')
             return
         
+        cmd_copy_temp = self.select_cmd('copy_temp_wpa_supplicant')
+        try:
+            subprocess.run(cmd_copy_temp)
+        except IOError as e:
+            print(e)
+            return
+        
         # write wifi config to file
         try:
             with open(WifiHandler.user_directory, 'a') as f:
@@ -242,30 +254,56 @@ class WifiHandler(IPythonHandler):
         except IOError as e:
             print(e)
             return
-        cmd_replace = self.select_cmd('replace_wpa_supplicant')
+
+        cmd_replace = self.select_cmd('replace_mv_wpa_supplicant')
         try:
             subprocess.run(cmd_replace)
         except SubprocessError as e:
             print(e)
-            self.error_and_return('Replace error occur')
+            self.error_and_return('Replace copy error occur')
             return
-
-    def wpa_reconfigure(self):
+        
+    def reconfigure_wpa(self):
 
         cmd = self.select_cmd('interface_reconfigure')
         try:
             with Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE) as proc:
-                output = proc.communicate=(input=(WifiHandler.sudo_password+'\n').encode())
+                output = proc.communicate(input=(WifiHandler.sudo_password+'\n').encode())
         except SubprocessError as e:
             print(e)
             self.error_and_return('Copy wpa_supplicant error')
             return
 
-        print('output ', output)
-            
-        
-        
+        output = output[0].decode('utf-8')
+        return output
 
+    def rewrite_wpa(self):
+
+        cmd_replace_tmp = self.select_cmd('replace_mv_temp_wpa_supplicant')
+        try:
+            subprocess.run(cmd_replace_tmp)
+        except SubprocessError as e:
+            print(e)
+            self.error_and_return('Replace move error occur')
+            return
+
+    def remove_temp_wpa(self):
+
+        cmd = self.select_cmd('replace_mv_wpa_supplicant')
+        try:
+            subprocess.run(cmd_copy)
+        except SubprocessError as e:
+            print(e)
+            self.error_and_return('remove temp supplicant file error')
+            return
+
+    def is_psk_right(self, output):
+
+        if output.find('FAIL') != -1:
+            return False
+
+        return True
+            
     def is_known_host(self, target_ssid):
 
         cmd = self.select_cmd('wpa_list')
@@ -281,6 +319,12 @@ class WifiHandler(IPythonHandler):
         target_line = [line for line in output.split('\n') if line.find(target_ssid) != -1]
 
         if not target_line:
+            return False
+        return True
+
+    def is_psk_right(self, output):
+        
+        if output.find('FAIL') != -1:
             return False
         return True
                 
@@ -314,7 +358,6 @@ class WifiSetter(WifiHandler):
     def put(self):
         
         is_psk_right = False
-
         try:
             data = json.loads(self.request.body.decode('utf-8'))
         except Exception as e:
@@ -323,18 +366,33 @@ class WifiSetter(WifiHandler):
             return
 
         target_index = self.is_pi_have_ssid(data)
+        # 이미 등록된 와이파이는 wpa_supplicant 를 건들 필요가 없음
         if target_index < 0:
             self.write_wpa(data)
-            self.wpa_reconfigure()
-            target_index = self.is_pi_have_ssid(data)
-        
-        current_wifi_info = self.select_network(target_index)
+            recon_out = self.reconfigure_wpa()
+            # 비밀번호 맞았을 때
+            if self.is_psk_right(recon_out):
+                target_index = self.is_pi_have_ssid(data)
+                current_wifi_info = self.select_network(target_index)
+
+                # remove copied wpa_supplicant file
+                self.remove_temp_wpa()
+            # 비밀번호 틀렸을 때
+            else:
+                time.sleep(10)
+                self.rewrite_wpa()
+                self.write({
+                    'status' : 200,
+                    'statusText' : 'Wifi password is wrong'
+                })
+                print('password wrong')
+                return
 
         self.write({
             'status' : 200,
             'statusText' : 'Wifi connect success',
         })
-        print('done')
+        print('Wifi has connected')
 
 class InterfaceDown(WifiHandler):
 

@@ -1,0 +1,9 @@
+network={
+	ssid='aaa'
+	psk='bbb'
+}
+
+network={
+	ssid='wrong'
+	psk='wrong'
+}
