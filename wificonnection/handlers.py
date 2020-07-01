@@ -377,14 +377,9 @@ class WifiSetter(WifiHandler):
 
                 # remove copied wpa_supplicant file
                 self.remove_temp_wpa()
-                self.write({
-                    'status' : 200,
-                    'statusText' : 'Wifi connect success',
-                    'data' : current_wifi_info
-                })
+
             # 비밀번호 틀렸을 때
             else:
-                time.sleep(10)
                 self.rewrite_wpa()
                 self.write({
                     'status' : 200,
@@ -394,12 +389,17 @@ class WifiSetter(WifiHandler):
                 return
         else:
             current_wifi_info = self.select_network(target_index)
-            self.write({
-                'status' : 200,
-                'statusText' : 'Wifi connect success',
-                'data' : current_wifi_info
-            })
 
+        for each_info in whole_wifi_info:
+            if each_info.get('SSID') == current_wifi_info[0]['SSID']:
+                current_wifi_info[0]['PSK'] = each_info.get('PSK')
+                current_wifi_info[0]['SIGNAL'] = each_info.get('SIGNAL')
+	
+        self.write({
+            'status' : 200,
+            'statusText' : 'Wifi connect success',
+            'data' : current_wifi_info
+        })
 
         print(current_wifi_info[0])
         print('Wifi has connected')
