@@ -291,7 +291,7 @@ class WifiHandler(IPythonHandler):
 
         cmd = self.select_cmd('replace_mv_wpa_supplicant')
         try:
-            subprocess.run(cmd_copy)
+            subprocess.run(cmd)
         except SubprocessError as e:
             print(e)
             self.error_and_return('remove temp supplicant file error')
@@ -333,6 +333,7 @@ class WifiGetter(WifiHandler):
     def get(self):
         """ Communication interface with jupyter notebook
         """
+        print('in WifiGetter')
 
         # deteremine the wireless status of raspberry Pi
         whole_wifi_info = self.scan_candidate_wifi()
@@ -356,7 +357,7 @@ class WifiGetter(WifiHandler):
 class WifiSetter(WifiHandler):
     
     def put(self):
-        
+        print('in wifisetter')        
         is_psk_right = False
         try:
             data = json.loads(self.request.body.decode('utf-8'))
@@ -389,9 +390,11 @@ class WifiSetter(WifiHandler):
                 return
         else:
             current_wifi_info = self.select_network(target_index)
-
+        print(len(whole_wifi_info))        
         for each_info in whole_wifi_info:
+            print(each_info.get('SSID'))
             if each_info.get('SSID') == current_wifi_info[0]['SSID']:
+                print('whether each_info get it')
                 current_wifi_info[0]['PSK'] = each_info.get('PSK')
                 current_wifi_info[0]['SIGNAL'] = each_info.get('SIGNAL')
 	
