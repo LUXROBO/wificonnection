@@ -212,6 +212,7 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
                             }, 3000);
                         },
                         error: function(data) {
+                            $('.connect-progress').css("display", "none")
                         }
         
                     };
