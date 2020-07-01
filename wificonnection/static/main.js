@@ -6,6 +6,8 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
         icon : 'fa-wifi',
         help_index : '',
         handler : function (env) {
+            const logo = $("#header-container img");
+            console.log(logo);
             $('<link />').attr({
                 rel: 'stylesheet',
                 type: 'text/css',
