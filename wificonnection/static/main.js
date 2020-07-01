@@ -302,9 +302,6 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
         // add button for new action
         IPython.toolbar.add_buttons_group([action_name])
 
-        const logo = $("#header-container img")[0];
-        logo.src = "/nbextensions/wificonnection/logo.svg";
-        console.log(logo);
     }
 
     return {load_ipython_extension: _on_load };
