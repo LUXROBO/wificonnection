@@ -212,7 +212,6 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
                             }, 3000);
                         },
                         error: function(data) {
-                            $('.connect-progress').css("display", "none")
                         }
         
                     };
@@ -265,7 +264,9 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
                             }, 3000);
 
                         } else {
+                            console.log("success else");
                             $('.password-wrap').addClass('invalid')
+                            $('.connect-progress').css("display", "none")
                         }
                     },
                     error: function(data) {
