@@ -1,11 +1,12 @@
+import os, json, urllib, requests
+import pandas as pd
+import time
+
 from notebook.utils import url_path_join as ujoin
 from notebook.base.handlers import IPythonHandler
-import os, json, urllib, requests
-from subprocess import Popen, PIPE, TimeoutExpired, SubprocessError
+
 import subprocess
-import pandas as pd
-from collections import OrderedDict
-import time
+from subprocess import Popen, PIPE, TimeoutExpired, SubprocessError
 
 whole_wifi_info = []
 current_wifi_info = []
