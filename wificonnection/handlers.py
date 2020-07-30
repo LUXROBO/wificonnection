@@ -178,7 +178,8 @@ class WifiHandler(IPythonHandler):
         return wifi_info
 
     def is_pi_have_ssid(self, data):
-
+        """ Check wheather raspberry pi knows given ssid
+        """
         cmd = self.select_cmd('wpa_list')
         try:
             with Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE) as proc:
@@ -200,6 +201,8 @@ class WifiHandler(IPythonHandler):
             return int(target_line[0][0])
 
     def select_network(self, index):
+        """ Set the wifi ssid
+        """
         cmd = self.select_cmd('wpa_select_network')
         cmd.append(str(index))
         print(cmd)
@@ -222,7 +225,8 @@ class WifiHandler(IPythonHandler):
         return wifi_info
 
     def write_wpa(self, data):
-        
+        """ Add new wifi information to wpa config file
+        """
         ssid = data.get('SSID')
         psk = data.get('PSK')
         cmd_copy = self.select_cmd('copy_wpa_supplicant')
@@ -264,7 +268,8 @@ class WifiHandler(IPythonHandler):
             return
         
     def reconfigure_wpa(self):
-
+        """ Adapt new config wpa config file
+        """
         cmd = self.select_cmd('interface_reconfigure')
         try:
             with Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE) as proc:
@@ -278,7 +283,9 @@ class WifiHandler(IPythonHandler):
         return output
 
     def rewrite_wpa(self):
-
+        """ Modify wpa config file back to the original file
+            when the password is wrong
+        """
         cmd_replace_tmp = self.select_cmd('replace_mv_temp_wpa_supplicant')
         try:
             subprocess.run(cmd_replace_tmp)
@@ -288,7 +295,8 @@ class WifiHandler(IPythonHandler):
             return
 
     def remove_temp_wpa(self):
-
+        """ Remove temp wpa file (copied original file)
+        """
         cmd = self.select_cmd('replace_mv_wpa_supplicant')
         try:
             subprocess.run(cmd)
@@ -298,14 +306,16 @@ class WifiHandler(IPythonHandler):
             return
 
     def is_psk_right(self, output):
-
+        """ Check if given password is right
+        """
         if output.find('FAIL') != -1:
             return False
 
         return True
-            
+    
     def is_known_host(self, target_ssid):
-
+        """ Check if pi knows the host
+        """
         cmd = self.select_cmd('wpa_list')
         try:
             with Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE) as proc:
@@ -319,12 +329,6 @@ class WifiHandler(IPythonHandler):
         target_line = [line for line in output.split('\n') if line.find(target_ssid) != -1]
 
         if not target_line:
-            return False
-        return True
-
-    def is_psk_right(self, output):
-        
-        if output.find('FAIL') != -1:
             return False
         return True
                 
