@@ -175,7 +175,6 @@ class WifiHandler(IPythonHandler):
         df_tmp_psk = df_scanned_wifi_info[['SSID', 'PSK', 'KNOWN_HOST']].drop_duplicates()
         df_tmp_signal = df_scanned_wifi_info.groupby('SSID').SIGNAL.min().reset_index(name = "SIGNAL")
         wifi_info = pd.merge(df_tmp_psk, df_tmp_signal, how="inner", on="SSID").sort_values(by=['SIGNAL']).to_dict('records')
-        
         return wifi_info
 
     def is_pi_have_ssid(self, data):
@@ -342,6 +341,7 @@ class WifiGetter(WifiHandler):
 
         # deteremine the wireless status of raspberry Pi
         whole_wifi_info = self.scan_candidate_wifi()
+        print(f"whole wifi info : {whole_wifi_info}"
         if self.is_inter_up:
             current_wifi_info = self.get_current_wifi_info()
 

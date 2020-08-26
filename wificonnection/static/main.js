@@ -145,6 +145,7 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
                 var targetRember = $(this).data('remember')
 
                 var wifiPrivate = !!($(this).find(".wifi-private").length)
+		console.log(wifiPrivate)
                 payload.SSID = targetName
                 $('.modal-backdrop').remove()
                 $('.wifi').parent().parent().parent().parent().remove()
@@ -216,7 +217,34 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
         
                     };
                     $.ajax(rememberSetting);
-                } else {
+                }else if(wifiPrivate==0){
+			var publicSetting = {
+			    url : '/wifi/setting',
+			    processData : false,
+			    type : "PUT",
+			    dataType : "json",
+			    data : JSON.stringify({
+		                SSID : targetName,
+			        PSK : '',
+			        KNOWN_HOST : False
+			    }),
+			    contentType: 'application/json',
+			    success: function(data) {
+			   	$('.tit-password').text(`WiFi "${payload.SSID}" is connected`)
+                             	$('.connect-progress').css("display", "none")
+                            	$('.remember-box').append(checkWifi)
+                            	setTimeout(() => {
+                                	$('.modal-backdrop').remove()
+                                	$('.modal').remove()
+                            	}, 3000);
+                             },
+			     error: function(data) {
+			     }
+
+			};
+			$.ajax(rememberSetting);
+
+		}else {
                     dialog.modal({
                         body: modalBodyDiv ,
                         title: 'Input password',
