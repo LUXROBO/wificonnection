@@ -213,6 +213,7 @@ define(['require','base/js/namespace','base/js/dialog','jquery'],function(requir
                             }, 3000);
                         },
                         error: function(data) {
+                            $('.tit-password').text(`WiFi "${payload.SSID}" connection has an error. Try again.`)
                         }
         
                     };

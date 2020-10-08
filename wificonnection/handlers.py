@@ -1,4 +1,4 @@
-import os, json, urllib, requests
+import os, re, json, urllib, requests
 import pandas as pd
 import time
 
@@ -38,7 +38,7 @@ class WifiHandler(IPythonHandler):
             'replace_mv_wpa_supplicant' : ['sudo', 'mv', WifiHandler.user_directory, WifiHandler.wpa_supplicant],
             'replace_mv_temp_wpa_supplicant' : ['sudo', 'mv', WifiHandler.temp_user_directory, WifiHandler.wpa_supplicant],
             'copy_temp_wpa_supplicant' : ['sudo', 'cp', WifiHandler.user_directory, WifiHandler.temp_user_directory],
-            'change_mode' : ['sudo', 'chmod', '777', WifiHandler.user_directory]
+            'change_mode' : ['sudo', 'chmod', '777', WifiHandler.user_directory],
         }.get(x, None)
 
     def error_and_return(self, reason):
@@ -113,6 +113,41 @@ class WifiHandler(IPythonHandler):
             
         return wifi_info
     
+    def is_psk_right(self):
+        ssid = os.popen("sudo iwconfig wlan0 | grep 'ESSID' \
+                        | awk -F\\\" '{print$2}'").read().replace("\n","")
+
+        numbers = re.findall('\\\\x[0-9a-fA-F][0-9a-fA-F]', ssid)
+
+        if len(numbers) > 0:
+            byte_string = b''
+            for n in numbers:
+                sp = ssid.split(n,1)
+                if sp[0] != '':
+                    byte_string += sp[0].encode('utf-8')
+                ssid = sp[1]
+                byte_string += self.string_to_hex(n).to_bytes(1, byteorder='big')
+            byte_string += ssid.encode('utf-8')
+            ssid = byte_string.decode()
+
+        if len(ssid) <= 1:
+            return False, "None"
+        
+        return True, ssid
+
+    def string_to_hex(self, str):
+        if len(str) != 4:
+            return str
+        elif str[:2] != '\\x':
+            return str
+        else:
+            f = char_to_hexnumber(str[2])
+            s = char_to_hexnumber(str[3])
+            if f is not None and s is not None:
+                return f*16+s
+            else:
+                return str
+
     def is_wifi_connected(self, current_wifi_info):
         """ True/false whether wifi connected
         """
@@ -270,6 +305,11 @@ class WifiHandler(IPythonHandler):
     def reconfigure_wpa(self):
         """ Adapt new config wpa config file
         """
+        self.interface_down()
+        time.sleep(1)
+        self.interface_up()
+        time.sleep(5)
+
         cmd = self.select_cmd('interface_reconfigure')
         try:
             with Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE) as proc:
@@ -305,13 +345,13 @@ class WifiHandler(IPythonHandler):
             self.error_and_return('remove temp supplicant file error')
             return
 
-    def is_psk_right(self, output):
-        """ Check if given password is right
-        """
-        if output.find('FAIL') != -1:
-            return False
+    #def is_psk_right(self, output):
+    #    """ Check if given password is right
+    #    """
+    #    if output.find('FAIL') != -1:
+    #        return False
 
-        return True
+    #    return True
     
     def is_known_host(self, target_ssid):
         """ Check if pi knows the host
@@ -341,7 +381,7 @@ class WifiGetter(WifiHandler):
 
         # deteremine the wireless status of raspberry Pi
         whole_wifi_info = self.scan_candidate_wifi()
-        print(f"whole wifi info : {whole_wifi_info}"
+        print(f"whole wifi info : {whole_wifi_info}")
         if self.is_inter_up:
             current_wifi_info = self.get_current_wifi_info()
 
@@ -377,12 +417,14 @@ class WifiSetter(WifiHandler):
             self.write_wpa(data)
             recon_out = self.reconfigure_wpa()
             # 비밀번호 맞았을 때
-            if self.is_psk_right(recon_out):
+            switch, _ = self.is_psk_right()
+            if switch:
                 target_index = self.is_pi_have_ssid(data)
                 current_wifi_info = self.select_network(target_index)
 
                 # remove copied wpa_supplicant file
                 self.remove_temp_wpa()
+                print("remove_temp_wpa")
 
             # 비밀번호 틀렸을 때
             else:
